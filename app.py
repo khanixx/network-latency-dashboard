@@ -35,7 +35,7 @@ def fetch_probe_data(measurement_id: int, probe_id: int, provider_name: str, day
 
 def generate_ai_report(summary_df: pd.DataFrame, api_key: str) -> str:
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel('gemini-pro')
     
     prompt = f"""
     You are an expert senior network engineer. I have collected latency data (RTT in milliseconds) from different ISPs to the same target over several days.
