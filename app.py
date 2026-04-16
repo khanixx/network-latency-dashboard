@@ -33,6 +33,8 @@ def fetch_probe_data(measurement_id: int, probe_id: int, provider_name: str, day
         return pd.DataFrame()
 
 def generate_ai_report(summary_df: pd.DataFrame, api_key: str, provider: str) -> str:
+    api_key = api_key.strip()
+    
     prompt = f"""
     You are an expert senior network engineer. I have collected latency data (RTT in milliseconds) from different ISPs to the same target over several days.
     
@@ -47,12 +49,15 @@ def generate_ai_report(summary_df: pd.DataFrame, api_key: str, provider: str) ->
     """
     
     if provider == "Google Gemini":
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={api_key}"
         headers = {'Content-Type': 'application/json'}
         data = {"contents": [{"parts": [{"text": prompt}]}]}
         
         response = requests.post(url, headers=headers, json=data)
-        response.raise_for_status()
+        
+        if not response.ok:
+            raise Exception(f"Google API Error {response.status_code}: {response.text}")
+            
         return response.json()['candidates'][0]['content']['parts'][0]['text']
         
     elif provider == "OpenAI (ChatGPT)":
@@ -67,7 +72,10 @@ def generate_ai_report(summary_df: pd.DataFrame, api_key: str, provider: str) ->
         }
         
         response = requests.post(url, headers=headers, json=data)
-        response.raise_for_status()
+        
+        if not response.ok:
+            raise Exception(f"OpenAI API Error {response.status_code}: {response.text}")
+            
         return response.json()['choices'][0]['message']['content']
 
 def main():
@@ -142,10 +150,8 @@ def main():
                     try:
                         report = generate_ai_report(summary, api_key, ai_provider)
                         st.success(report) 
-                    except requests.exceptions.HTTPError as e:
-                        st.error(f"API Error ({e.response.status_code}). Please check if your API key is correct and valid for {ai_provider}.")
                     except Exception as e:
-                        st.error(f"Failed to generate report. Error: {e}")
+                        st.error(f"Analysis failed. Detail: {e}")
             
             st.divider()
             
