@@ -3,6 +3,7 @@ import requests
 import pandas as pd
 import plotly.express as px
 from datetime import datetime, timedelta
+import google.generativeai as genai
 
 st.set_page_config(page_title="RIPE Atlas Multi-Provider", page_icon="📊", layout="wide")
 
@@ -32,6 +33,26 @@ def fetch_probe_data(measurement_id: int, probe_id: int, provider_name: str, day
         st.error(f"Error fetching Probe {probe_id}: {e}")
         return pd.DataFrame()
 
+def generate_ai_report(summary_df: pd.DataFrame, api_key: str) -> str:
+    genai.configure(api_key=api_key)
+    model = genai.GenerativeModel('gemini-1.5-flash')
+    
+    prompt = f"""
+    You are an expert senior network engineer. I have collected latency data (RTT in milliseconds) from different ISPs to the same target over several days.
+    
+    Here are the summary statistics:
+    {summary_df.to_markdown(index=False)}
+    
+    Your task:
+    1. Analyze this data.
+    2. Compare the providers against each other.
+    3. Evaluate network stability (jitter) based on Min, Avg, and Max RTT differences.
+    4. Provide a concise, professional conclusion and recommendation in a report format.
+    """
+    
+    response = model.generate_content(prompt)
+    return response.text
+
 def main():
     st.title("📊 Multi-Provider Latency Monitor")
     st.markdown("Enter the required IDs to fetch and visualize RTT data.")
@@ -48,6 +69,10 @@ def main():
             placeholder="7734: Kazakhtelecom (AS9198)\n53961: Beeline KZ (AS21299)\n6746: Tele2 / Altel (AS48503)",
             height=120
         )
+        
+        st.divider()
+        st.subheader("🤖 AI Analytics")
+        api_key = st.text_input("Gemini API Key", type="password", placeholder="Enter your key here...")
         
         submit_button = st.button("Load / Update Data", type="primary", width="stretch")
 
@@ -90,6 +115,17 @@ def main():
                 summary.style.format({"Min (ms)": "{:.1f}", "Avg (ms)": "{:.1f}", "Max (ms)": "{:.1f}"}), 
                 width="stretch"
             )
+            
+            st.subheader("🤖 AI Network Analysis")
+            if not api_key:
+                st.info("💡 Enter your Gemini API Key in the sidebar to generate an automated expert report.")
+            else:
+                with st.spinner("AI is analyzing the network data..."):
+                    try:
+                        report = generate_ai_report(summary, api_key)
+                        st.success(report) 
+                    except Exception as e:
+                        st.error(f"Failed to generate report. Check your API key. Error: {e}")
             
             st.divider()
             
