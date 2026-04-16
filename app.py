@@ -49,7 +49,7 @@ def generate_ai_report(summary_df: pd.DataFrame, api_key: str, provider: str) ->
     """
     
     if provider == "Google Gemini":
-        url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={api_key}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={api_key}"
         headers = {'Content-Type': 'application/json'}
         data = {"contents": [{"parts": [{"text": prompt}]}]}
         
@@ -78,6 +78,24 @@ def generate_ai_report(summary_df: pd.DataFrame, api_key: str, provider: str) ->
             
         return response.json()['choices'][0]['message']['content']
 
+    elif provider == "xAI (Grok)":
+        url = "https://api.x.ai/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+        data = {
+            "model": "grok-beta",
+            "messages": [{"role": "user", "content": prompt}]
+        }
+        
+        response = requests.post(url, headers=headers, json=data)
+        
+        if not response.ok:
+            raise Exception(f"xAI API Error {response.status_code}: {response.text}")
+            
+        return response.json()['choices'][0]['message']['content']
+
 def main():
     st.title("📊 Multi-Provider Latency Monitor")
     st.markdown("Enter the required IDs to fetch and visualize RTT data. Leave blank to use default examples.")
@@ -100,7 +118,7 @@ def main():
         
         st.divider()
         st.subheader("🤖 AI Analytics")
-        ai_provider = st.selectbox("Select AI Provider", ["Google Gemini", "OpenAI (ChatGPT)"])
+        ai_provider = st.selectbox("Select AI Provider", ["Google Gemini", "OpenAI (ChatGPT)", "xAI (Grok)"])
         api_key = st.text_input("API Key", type="password", placeholder=f"Enter your {ai_provider.split()[0]} key...")
         
         submit_button = st.button("Load / Update Data", type="primary", width="stretch")
