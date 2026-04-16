@@ -149,6 +149,7 @@ def main():
         
         if all_dfs:
             final_df = pd.concat(all_dfs, ignore_index=True)
+            colors = ['#2ca02c', '#ff7f0e', '#1f77b4', '#d62728', '#9467bd']
             
             st.subheader("📈 Summary Statistics")
             summary = final_df.groupby("Provider")["RTT (ms)"].agg(['count', 'min', 'mean', 'max']).reset_index()
@@ -178,7 +179,7 @@ def main():
                 y="RTT (ms)", 
                 color="Provider",
                 template="plotly_white",
-                color_discrete_sequence=['#2ca02c', '#ff7f0e', '#1f77b4', '#d62728', '#9467bd']
+                color_discrete_sequence=colors
             )
             fig_line.update_layout(
                 xaxis_title="Local Time",
@@ -197,7 +198,7 @@ def main():
                 y="RTT (ms)", 
                 color="Provider",
                 template="plotly_white",
-                color_discrete_sequence=['#2ca02c', '#ff7f0e', '#1f77b4', '#d62728', '#9467bd']
+                color_discrete_sequence=colors
             )
             fig_box.update_layout(
                 xaxis_title="",
@@ -206,6 +207,51 @@ def main():
                 showlegend=False
             )
             st.plotly_chart(fig_box, width="stretch")
+
+            st.divider()
+
+            st.subheader("Figure 3 — RTT Frequency Histogram")
+            fig_hist = px.histogram(
+                final_df, 
+                x="RTT (ms)", 
+                color="Provider",
+                barmode="overlay",
+                template="plotly_white",
+                opacity=0.6,
+                color_discrete_sequence=colors
+            )
+            fig_hist.update_layout(
+                xaxis_title="Latency (ms)",
+                yaxis_title="Frequency",
+                margin=dict(l=0, r=0, t=20, b=0)
+            )
+            st.plotly_chart(fig_hist, width="stretch")
+
+            st.divider()
+
+            st.subheader("Figure 4 — Individual Provider Timeseries")
+            unique_providers = final_df['Provider'].unique()
+            tabs = st.tabs(list(unique_providers))
+            
+            for i, provider in enumerate(unique_providers):
+                with tabs[i]:
+                    provider_df = final_df[final_df['Provider'] == provider]
+                    fig_ind = px.line(
+                        provider_df, 
+                        x="Time", 
+                        y="RTT (ms)",
+                        template="plotly_white",
+                        color_discrete_sequence=[colors[i % len(colors)]]
+                    )
+                    fig_ind.update_layout(
+                        xaxis_title="Local Time",
+                        yaxis_title="RTT (ms)",
+                        hovermode="x unified",
+                        margin=dict(l=0, r=0, t=20, b=0)
+                    )
+                    st.plotly_chart(fig_ind, width="stretch")
+            
+            st.divider()
             
             with st.expander("📊 View Raw Data"):
                 st.dataframe(final_df, width="stretch")
