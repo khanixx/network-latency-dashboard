@@ -80,18 +80,21 @@ def generate_ai_report(summary_df: pd.DataFrame, api_key: str, provider: str) ->
 
 def main():
     st.title("📊 Multi-Provider Latency Monitor")
-    st.markdown("Enter the required IDs to fetch and visualize RTT data.")
+    st.markdown("Enter the required IDs to fetch and visualize RTT data. Leave blank to use default examples.")
+    
+    default_meas_id = 86227489
+    default_probes_str = "7734: Kazakhtelecom (AS9198)\n53961: Beeline KZ (AS21299)\n6746: Tele2 / Altel (AS48503)"
     
     with st.sidebar:
         st.header("⚙️ Query Settings")
-        measurement_id = st.number_input("Measurement ID", value=None, placeholder="e.g., 86227489", step=1)
+        measurement_id = st.number_input("Measurement ID", value=None, placeholder=f"e.g., {default_meas_id}", step=1)
         days = st.slider("History Period (days)", min_value=1, max_value=14, value=3)
         
         st.subheader("📡 Probes Configuration")
         probes_input = st.text_area(
             "Format -> ProbeID: Provider Name", 
             value="", 
-            placeholder="7734: Kazakhtelecom (AS9198)\n53961: Beeline KZ (AS21299)\n6746: Tele2 / Altel (AS48503)",
+            placeholder=default_probes_str,
             height=120
         )
         
@@ -103,16 +106,11 @@ def main():
         submit_button = st.button("Load / Update Data", type="primary", width="stretch")
 
     if submit_button:
-        if measurement_id is None:
-            st.warning("Please enter a valid Measurement ID.")
-            return
-            
-        if not probes_input.strip():
-            st.warning("Please provide at least one probe in the text area.")
-            return
+        active_meas_id = measurement_id if measurement_id is not None else default_meas_id
+        active_probes_str = probes_input.strip() if probes_input.strip() else default_probes_str
 
         probes_dict = {}
-        for line in probes_input.strip().split('\n'):
+        for line in active_probes_str.split('\n'):
             if ':' in line:
                 p_id, p_name = line.split(':', 1)
                 try:
@@ -127,7 +125,7 @@ def main():
         all_dfs = []
         with st.spinner('Fetching data from RIPE Atlas...'):
             for p_id, p_name in probes_dict.items():
-                df = fetch_probe_data(measurement_id, p_id, p_name, days)
+                df = fetch_probe_data(active_meas_id, p_id, p_name, days)
                 if not df.empty:
                     all_dfs.append(df)
         
