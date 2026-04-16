@@ -3,7 +3,6 @@ import requests
 import pandas as pd
 import plotly.express as px
 from datetime import datetime, timedelta
-import google.generativeai as genai
 
 st.set_page_config(page_title="RIPE Atlas Multi-Provider", page_icon="📊", layout="wide")
 
@@ -33,10 +32,7 @@ def fetch_probe_data(measurement_id: int, probe_id: int, provider_name: str, day
         st.error(f"Error fetching Probe {probe_id}: {e}")
         return pd.DataFrame()
 
-def generate_ai_report(summary_df: pd.DataFrame, api_key: str) -> str:
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-pro')
-    
+def generate_ai_report(summary_df: pd.DataFrame, api_key: str, provider: str) -> str:
     prompt = f"""
     You are an expert senior network engineer. I have collected latency data (RTT in milliseconds) from different ISPs to the same target over several days.
     
@@ -50,8 +46,29 @@ def generate_ai_report(summary_df: pd.DataFrame, api_key: str) -> str:
     4. Provide a concise, professional conclusion and recommendation in a report format.
     """
     
-    response = model.generate_content(prompt)
-    return response.text
+    if provider == "Google Gemini":
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+        headers = {'Content-Type': 'application/json'}
+        data = {"contents": [{"parts": [{"text": prompt}]}]}
+        
+        response = requests.post(url, headers=headers, json=data)
+        response.raise_for_status()
+        return response.json()['candidates'][0]['content']['parts'][0]['text']
+        
+    elif provider == "OpenAI (ChatGPT)":
+        url = "https://api.openai.com/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+        data = {
+            "model": "gpt-4o-mini",
+            "messages": [{"role": "user", "content": prompt}]
+        }
+        
+        response = requests.post(url, headers=headers, json=data)
+        response.raise_for_status()
+        return response.json()['choices'][0]['message']['content']
 
 def main():
     st.title("📊 Multi-Provider Latency Monitor")
@@ -72,7 +89,8 @@ def main():
         
         st.divider()
         st.subheader("🤖 AI Analytics")
-        api_key = st.text_input("Gemini API Key", type="password", placeholder="Enter your key here...")
+        ai_provider = st.selectbox("Select AI Provider", ["Google Gemini", "OpenAI (ChatGPT)"])
+        api_key = st.text_input("API Key", type="password", placeholder=f"Enter your {ai_provider.split()[0]} key...")
         
         submit_button = st.button("Load / Update Data", type="primary", width="stretch")
 
@@ -118,14 +136,16 @@ def main():
             
             st.subheader("🤖 AI Network Analysis")
             if not api_key:
-                st.info("💡 Enter your Gemini API Key in the sidebar to generate an automated expert report.")
+                st.info(f"💡 Enter your {ai_provider.split()[0]} API Key in the sidebar to generate an automated expert report.")
             else:
-                with st.spinner("AI is analyzing the network data..."):
+                with st.spinner(f"{ai_provider} is analyzing the network data..."):
                     try:
-                        report = generate_ai_report(summary, api_key)
+                        report = generate_ai_report(summary, api_key, ai_provider)
                         st.success(report) 
+                    except requests.exceptions.HTTPError as e:
+                        st.error(f"API Error ({e.response.status_code}). Please check if your API key is correct and valid for {ai_provider}.")
                     except Exception as e:
-                        st.error(f"Failed to generate report. Check your API key. Error: {e}")
+                        st.error(f"Failed to generate report. Error: {e}")
             
             st.divider()
             
