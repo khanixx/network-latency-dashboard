@@ -85,7 +85,7 @@ def generate_ai_report(summary_df: pd.DataFrame, api_key: str, provider: str) ->
             "Content-Type": "application/json"
         }
         data = {
-            "model": "grok-beta",
+            "model": "grok-4.20-reasoning",
             "messages": [{"role": "user", "content": prompt}]
         }
         
