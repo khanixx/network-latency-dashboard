@@ -4,7 +4,7 @@ import pandas as pd
 import plotly.express as px
 from datetime import datetime, timedelta
 
-st.set_page_config(page_title="RIPE Atlas Multi-Provider", page_icon="📊", layout="wide")
+st.set_page_config(page_title="RIPE Atlas Multi-Provider by Kamaliyev Abylaikhan", page_icon="📊", layout="wide")
 
 @st.cache_data(ttl=600)
 def fetch_probe_data(measurement_id: int, probe_id: int, provider_name: str, days: int) -> pd.DataFrame:
@@ -79,14 +79,14 @@ def generate_ai_report(summary_df: pd.DataFrame, api_key: str, provider: str) ->
         return response.json()['choices'][0]['message']['content']
 
     elif provider == "xAI (Grok)":
-        url = "https://api.x.ai/v1/chat/completions"
+        url = "https://api.x.ai/v1/responses"
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json"
         }
         data = {
             "model": "grok-4.20-reasoning",
-            "messages": [{"role": "user", "content": prompt}]
+            "input": prompt
         }
         
         response = requests.post(url, headers=headers, json=data)
@@ -94,7 +94,19 @@ def generate_ai_report(summary_df: pd.DataFrame, api_key: str, provider: str) ->
         if not response.ok:
             raise Exception(f"xAI API Error {response.status_code}: {response.text}")
             
-        return response.json()['choices'][0]['message']['content']
+        resp_json = response.json()
+        try:
+            for item in resp_json.get('output', []):
+                content = item.get('content')
+                if isinstance(content, list):
+                    for c in content:
+                        if c.get('type') == 'output_text':
+                            return c.get('text')
+                elif isinstance(content, str):
+                    return content
+            return str(resp_json)
+        except Exception:
+            return str(resp_json)
 
 def main():
     st.title("📊 Multi-Provider Latency Monitor")
