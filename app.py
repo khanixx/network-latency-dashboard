@@ -49,7 +49,7 @@ def generate_ai_report(summary_df: pd.DataFrame, api_key: str, provider: str) ->
     """
     
     if provider == "Google Gemini":
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={api_key}"
+        url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={api_key}"
         headers = {'Content-Type': 'application/json'}
         data = {"contents": [{"parts": [{"text": prompt}]}]}
         
