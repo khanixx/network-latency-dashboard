@@ -41,7 +41,7 @@ def generate_ai_report(summary_df: pd.DataFrame, api_key: str) -> str:
     You are an expert senior network engineer. I have collected latency data (RTT in milliseconds) from different ISPs to the same target over several days.
     
     Here are the summary statistics:
-    {summary_df.to_markdown(index=False)}
+    {summary_df.to_string(index=False)}
     
     Your task:
     1. Analyze this data.
