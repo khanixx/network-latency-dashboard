@@ -4,7 +4,7 @@ import pandas as pd
 import plotly.express as px
 from datetime import datetime, timedelta
 
-st.set_page_config(page_title="RIPE Atlas Multi-Provider by Kamaliyev Abylaikhan", page_icon="📊", layout="wide")
+st.set_page_config(page_title="RIPE Atlas Multi-Provider", page_icon="📊", layout="wide")
 
 @st.cache_data(ttl=600)
 def fetch_probe_data(measurement_id: int, probe_id: int, provider_name: str, days: int) -> pd.DataFrame:
@@ -134,6 +134,9 @@ def main():
         api_key = st.text_input("API Key", type="password", placeholder=f"Enter your {ai_provider.split()[0]} key...")
         
         submit_button = st.button("Load / Update Data", type="primary", width="stretch")
+        
+        st.divider()
+        st.markdown("<div style='text-align: center; color: gray; font-size: 0.9em;'>👨‍💻 Made by Kamaliyev Abylaikhan</div>", unsafe_allow_html=True)
 
     if submit_button:
         active_meas_id = measurement_id if measurement_id is not None else default_meas_id
