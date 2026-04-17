@@ -136,7 +136,7 @@ def main():
         submit_button = st.button("Load / Update Data", type="primary", width="stretch")
         
         st.divider()
-        st.markdown("<div style='text-align: center; color: gray; font-size: 0.9em;'>👨‍💻 Made by Kamaliyev Abylaikhan</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align: center; color: gray; font-size: 0.9em;'>👨‍💻 Made by Kamaliyev Abylaikhan (khanixx)</div>", unsafe_allow_html=True)
 
     if submit_button:
         active_meas_id = measurement_id if measurement_id is not None else default_meas_id
